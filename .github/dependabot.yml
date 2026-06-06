@@ -4,8 +4,5 @@ updates:
     directory: /
     schedule:
       interval: weekly
-
-  - package-ecosystem: npm
-    directory: /web
-    schedule:
-      interval: weekly
+  # 注: web は bun を使用。Dependabot は bun.lock を更新できないため npm エコシステムは登録しない
+  #     （frozen-lockfile で必ず失敗するため）。依存更新は `bun update` で手動運用する。
