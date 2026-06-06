@@ -1,0 +1,406 @@
+:root {
+  color-scheme: dark;
+  --bg: #14151a;
+  --panel: #1d1f27;
+  --text: #e6e7ea;
+  --muted: #9aa0ab;
+  --ok: #18c964;
+  --ng: #f43f5e;
+  --calib: #f5c518;
+  --idle: #5a6072;
+  --mono: ui-monospace, Consolas, "Cascadia Mono", monospace;
+  font-family: system-ui, "Segoe UI", "Yu Gothic UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 4px 0 0;
+}
+
+h1 small {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 400;
+  margin-left: 8px;
+}
+
+.error {
+  color: var(--ng);
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid var(--ng);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 6px solid var(--idle);
+  transition: border-color 0.2s ease;
+}
+
+.stage.ok {
+  border-color: var(--ok);
+}
+
+.stage.ng {
+  border-color: var(--ng);
+}
+
+.stage.calib {
+  border-color: var(--calib);
+}
+
+.stage canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  padding: 16px;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.hud .status {
+  font-size: 22px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.hud .metrics {
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.hud .debug {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: #ffe680;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.stage.ok .hud .status {
+  color: var(--ok);
+}
+
+.stage.ng .hud .status {
+  color: var(--ng);
+}
+
+.stage.calib .hud .status {
+  color: var(--calib);
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.controls button {
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--idle);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.controls button:hover {
+  border-color: var(--muted);
+}
+
+/* キャリブのターゲット（画面座標系の DOM 重畳） */
+.target {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  background: var(--calib);
+  box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.3);
+  animation: target-pulse 1s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes target-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.65);
+    opacity: 0.7;
+  }
+}
+
+/* 固視成立（安定）でターゲットが緑に */
+.target.stable {
+  background: var(--ok);
+  box-shadow: 0 0 0 6px rgba(24, 201, 100, 0.35);
+  animation: none;
+  transform: scale(0.8);
+}
+
+/* 予測視線点（PoR） */
+.gaze-dot {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: rgba(0, 200, 255, 0.35);
+  border: 2px solid rgba(0, 200, 255, 0.6);
+  pointer-events: none;
+  transition:
+    left 0.05s linear,
+    top 0.05s linear;
+}
+
+.gaze-dot.bright {
+  background: rgba(0, 200, 255, 0.7);
+  border-color: #00e0ff;
+}
+
+/* ACTIVE 時の予測視線点はウィンドウ全体座標（position: fixed） */
+.gaze-dot.viewport {
+  position: fixed;
+  z-index: 40;
+}
+
+/* キャリブ中はカメラ映像を隠して真っ白に（点に集中できるよう） */
+.stage.calibrating {
+  background: #ffffff;
+}
+
+.stage.calibrating canvas {
+  display: none;
+}
+
+.cal-overlay {
+  position: absolute;
+  inset: 0;
+  color: #1a1a1a;
+}
+
+/* 全ウィンドウのキャリブ画面（真っ白・最前面） */
+.cal-fullscreen {
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+  color: #1a1a1a;
+  z-index: 50;
+}
+
+/* カメラのレンズ注視: 画面に位置マーカーを置かず、大きな文字＋上矢印のみ */
+.cal-lens {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: 24px;
+}
+
+.cal-lens .arrow {
+  font-size: 64px;
+  line-height: 1;
+  color: #2b6cff;
+  animation: arrow-bob 1.2s ease-in-out infinite;
+}
+
+.cal-lens .big {
+  font-size: clamp(28px, 5vw, 52px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.cal-lens .sub2 {
+  font-size: clamp(15px, 2.2vw, 20px);
+  color: #555;
+}
+
+/* 進捗は視線を引かないよう下端の細いバーで */
+.cal-progress {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 6%;
+  height: 10px;
+  border-radius: 6px;
+  background: #e2e2ea;
+  overflow: hidden;
+}
+
+.cal-progress .bar {
+  height: 100%;
+  background: var(--ok);
+  transition: width 0.12s linear;
+}
+
+@keyframes arrow-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.cal-instruction {
+  position: absolute;
+  top: 7%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.cal-instruction .sub {
+  display: block;
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 400;
+  color: #666;
+}
+
+.cal-debug {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #555;
+}
+
+/* 進捗リング付きターゲット（リングは品質を“正直に”表す: 良好固視で満ち、崩れると減る） */
+@property --pct {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
+.cal-target {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  --ring: #2b6cff;
+  --glow: rgba(43, 108, 255, 0.5);
+  transition: --pct 0.12s linear;
+}
+
+.cal-target.validate {
+  --ring: #9b5cff;
+  --glow: rgba(155, 92, 255, 0.5);
+}
+
+.cal-target .ring {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: conic-gradient(var(--ring) var(--pct, 0%), #e2e2ea 0);
+  -webkit-mask: radial-gradient(transparent 52%, #000 54%);
+  mask: radial-gradient(transparent 52%, #000 54%);
+}
+
+.cal-target .dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border-radius: 50%;
+  background: var(--ring);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+/* 良好な固視を保てているときだけ点が光る（フィードバックが正直） */
+.cal-target.good .dot {
+  transform: scale(1.15);
+  box-shadow:
+    0 0 0 5px var(--glow),
+    0 0 16px var(--glow);
+}
+
+/* ロック確定 */
+.cal-target.confirm {
+  --ring: var(--ok);
+  --glow: rgba(24, 201, 100, 0.55);
+  animation: captured-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cal-target.confirm .dot {
+  background: var(--ok);
+  transform: scale(1.2);
+}
+
+@keyframes captured-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1.08);
+  }
+}
+
+.accuracy {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}

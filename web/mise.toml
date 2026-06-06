@@ -1,0 +1,30 @@
+[tools]
+bun = "1.3"
+
+[tasks.install]
+description = "依存をインストール"
+run = "bun install"
+
+[tasks.dev]
+description = "開発サーバ（ブラウザで開く）"
+run = "bun run dev"
+
+[tasks.build]
+description = "静的ビルド（dist/）"
+run = "bun run build"
+
+[tasks.preview]
+description = "ビルド成果物を配信"
+run = "bun run preview"
+
+[tasks.test]
+description = "純粋ロジックのテスト"
+run = "bun test"
+
+[tasks.typecheck]
+description = "svelte-check 型チェック"
+run = "bun run typecheck"
+
+[tasks.lint]
+description = "biome lint/format チェック"
+run = "bun run lint"

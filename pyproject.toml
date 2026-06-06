@@ -1,0 +1,42 @@
+[project]
+name = "gazedetect"
+version = "0.1.0"
+description = "リアルタイムでカメラ目線（アイコンタクト）を検知する面接練習アプリ"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mediapipe>=0.10.35",
+    "numpy>=1.26,<3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "ruff>=0.15.16",
+    "ty>=0.0.44",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "RUF",  # ruff-specific
+]
+# 日本語の全角約物（（）／＝／× など）を「紛らわしい文字」と誤検知するため無効化。
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

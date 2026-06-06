@@ -1,0 +1,6 @@
+# 改行はリポジトリ内では LF に正規化（クロスプラットフォーム一貫）
+* text=auto eol=lf
+
+# バイナリ
+*.png binary
+*.task binary
